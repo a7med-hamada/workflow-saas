@@ -110,7 +110,19 @@ async function handleAppRequest(req, res) {
     ensureServerlessInit();
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const query = parsedUrl.searchParams;
-    const pathname = query.get('__wf_path') || parsedUrl.pathname;
+    if (req.query && typeof req.query === 'object') {
+      for (const [k, v] of Object.entries(req.query)) {
+        if (!query.has(k) && typeof v === 'string') {
+          query.set(k, v);
+        }
+      }
+    }
+    let pathname = query.get('__wf_path') || (req.query && req.query.__wf_path) || parsedUrl.pathname;
+    if ((pathname === '/api/index.js' || pathname === '/api/[...path].js') && req.query && req.query.path) {
+      const p = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
+      pathname = `/api/${p.replace(/^\/+/, '')}`;
+    }
+    if (!pathname.startsWith('/')) pathname = `/${pathname}`;
     query.delete('__wf_path');
 
     if (pathname === '/api/health' && req.method === 'GET') {
