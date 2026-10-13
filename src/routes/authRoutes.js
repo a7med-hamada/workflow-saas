@@ -489,7 +489,9 @@ function handleAuthRoutes(req, res, { pathname, body, auth, sendJson, getClientI
   if (req.method === 'GET' && pathname === '/api/auth/workspace-accounts') {
     let targetCompanyId = auth && auth.company ? auth.company.id : null;
     if (!targetCompanyId) {
-      const latestCompany = db.prepare("SELECT id FROM companies WHERE slug = 'namaa-tech-demo' UNION ALL SELECT id FROM companies ORDER BY rowid DESC LIMIT 1").get();
+      const latestCompany =
+        db.prepare("SELECT id FROM companies WHERE slug = 'namaa-tech-demo' LIMIT 1").get() ||
+        db.prepare('SELECT id FROM companies ORDER BY created_at DESC LIMIT 1').get();
       if (latestCompany) targetCompanyId = latestCompany.id;
     }
     if (!targetCompanyId) {
