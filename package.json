@@ -1,0 +1,15 @@
+{
+  "name": "workflow-saas",
+  "version": "1.0.0",
+  "description": "WorkFlow — Complete Multi-Tenant SaaS Project Management & Employee Task Tracking System",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js",
+    "test": "node --test tests/workflow.test.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
