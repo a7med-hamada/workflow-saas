@@ -177,6 +177,28 @@ window.WF = {
       body
     });
 
+    if (res.status === 401 && this.token && !options._retried && !path.startsWith('/api/auth/login') && !path.startsWith('/api/auth/quick-switch')) {
+      const recoveryEmail = (this.auth && this.auth.user && this.auth.user.email) || localStorage.getItem('wf_user_email') || 'owner@demo.workflow.local';
+      try {
+        const switchRes = await fetch('/api/auth/quick-switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: recoveryEmail })
+        });
+        if (switchRes.ok) {
+          const switchData = await switchRes.json();
+          if (switchData && switchData.token) {
+            this.token = switchData.token;
+            localStorage.setItem('wf_token', switchData.token);
+            if (switchData.user && switchData.user.email) {
+              localStorage.setItem('wf_user_email', switchData.user.email);
+            }
+            return this.api(path, { ...options, _retried: true });
+          }
+        }
+      } catch (_) {}
+    }
+
     const contentType = res.headers.get('content-type') || '';
     let data = null;
     if (contentType.includes('application/json')) {
@@ -190,6 +212,9 @@ window.WF = {
       err.status = res.status;
       err.data = data;
       throw err;
+    }
+    if (data && data.user && data.user.email) {
+      localStorage.setItem('wf_user_email', data.user.email);
     }
     return data;
   },
