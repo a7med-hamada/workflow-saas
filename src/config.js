@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 
 // Load .env if present
 const envFile = path.resolve(__dirname, '..', '.env');
@@ -20,18 +21,23 @@ if (fs.existsSync(envFile)) {
 }
 
 const ROOT_DIR = path.resolve(__dirname, '..');
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
 
 const config = {
   port: Number(process.env.PORT || 3000),
   host: process.env.HOST || '127.0.0.1',
   nodeEnv: process.env.NODE_ENV || 'development',
-  isDev: (process.env.NODE_ENV || 'development') !== 'production',
+  isDev: process.env.ALLOW_DEMO !== 'false',
   databasePath: process.env.DATABASE_PATH
     ? path.resolve(ROOT_DIR, process.env.DATABASE_PATH)
-    : path.join(ROOT_DIR, 'data', 'workflow.sqlite'),
+    : IS_SERVERLESS
+      ? path.join(os.tmpdir(), 'workflow.sqlite')
+      : path.join(ROOT_DIR, 'data', 'workflow.sqlite'),
   uploadDir: process.env.UPLOAD_DIR
     ? path.resolve(ROOT_DIR, process.env.UPLOAD_DIR)
-    : path.join(ROOT_DIR, 'storage', 'uploads'),
+    : IS_SERVERLESS
+      ? path.join(os.tmpdir(), 'uploads')
+      : path.join(ROOT_DIR, 'storage', 'uploads'),
   maxUploadSizeMb: Number(process.env.MAX_UPLOAD_SIZE_MB || 10),
   sessionTtlHours: Number(process.env.SESSION_TTL_HOURS || 168),
   authRateLimitWindowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
