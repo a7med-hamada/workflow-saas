@@ -1,18 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "api/**/*.js": {
+    "api/index.js": {
       "includeFiles": "{migrations/**,public/**,src/**}"
     }
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/[...path].js?__wf_path=/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js?__wf_path=/$1"
+      "source": "/api/:path*",
+      "destination": "/api/index.js?__wf_path=/api/:path*"
     }
   ]
 }
