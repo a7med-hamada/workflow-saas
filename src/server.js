@@ -109,8 +109,9 @@ async function handleAppRequest(req, res) {
   try {
     ensureServerlessInit();
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    const pathname = parsedUrl.pathname;
     const query = parsedUrl.searchParams;
+    const pathname = query.get('__wf_path') || parsedUrl.pathname;
+    query.delete('__wf_path');
 
     if (pathname === '/api/health' && req.method === 'GET') {
       return sendJson(res, 200, { status: 'ok', service: 'WorkFlow SaaS API', timestamp: new Date().toISOString() });
