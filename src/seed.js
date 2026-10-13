@@ -144,8 +144,11 @@ function seedDemoWorkspace({ reset = true } = {}) {
     const today = now.slice(0, 10);
     const dayOffset = (days) => new Date(Date.now() + days * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
-    const companyId = newId('cmp');
-    const ownerId = newId('usr');
+    let seq = 0;
+    const dId = (prefix) => `${prefix}_demo_${String(++seq).padStart(4, '0')}`;
+
+    const companyId = dId('cmp');
+    const ownerId = dId('usr');
     const passwordHash = hashPassword(DEFAULT_DEMO_PASSWORD);
 
     // 1. Create Demo Company & Settings
@@ -179,9 +182,9 @@ function seedDemoWorkspace({ reset = true } = {}) {
       INSERT INTO roles (id, company_id, code, name_ar, name_en, default_permissions_json, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    insertRole.run(newId('rol'), companyId, 'owner', 'مالك الشركة / المدير العام', 'Company Owner / Admin', JSON.stringify(config.defaultRolePermissions.owner), now);
-    insertRole.run(newId('rol'), companyId, 'manager', 'مدير فريق / مشرف', 'Manager / Team Leader', JSON.stringify(config.defaultRolePermissions.manager), now);
-    insertRole.run(newId('rol'), companyId, 'employee', 'موظف', 'Employee', JSON.stringify(config.defaultRolePermissions.employee), now);
+    insertRole.run(dId('rol'), companyId, 'owner', 'مالك الشركة / المدير العام', 'Company Owner / Admin', JSON.stringify(config.defaultRolePermissions.owner), now);
+    insertRole.run(dId('rol'), companyId, 'manager', 'مدير فريق / مشرف', 'Manager / Team Leader', JSON.stringify(config.defaultRolePermissions.manager), now);
+    insertRole.run(dId('rol'), companyId, 'employee', 'موظف', 'Employee', JSON.stringify(config.defaultRolePermissions.employee), now);
 
     // Helper to create user + membership
     const insertUser = db.prepare(`
@@ -198,20 +201,20 @@ function seedDemoWorkspace({ reset = true } = {}) {
     // 2. Create Owner (1)
     insertUser.run(ownerId, 'owner@demo.workflow.local', passwordHash, 'طارق المنصور (Tariq Al-Mansour)', '+966501000001', now, now);
     insertMember.run(
-      newId('mem'), companyId, ownerId, 'EMP-001', 'المدير التنفيذي ومالك الشركة',
+      dId('mem'), companyId, ownerId, 'EMP-001', 'المدير التنفيذي ومالك الشركة',
       null, null, 'owner', JSON.stringify(config.defaultRolePermissions.owner), dayOffset(-120), now, now
     );
 
     // 3. Create Managers (2)
-    const mgrEngId = newId('usr');
-    const mgrMktId = newId('usr');
+    const mgrEngId = dId('usr');
+    const mgrMktId = dId('usr');
     insertUser.run(mgrEngId, 'manager@demo.workflow.local', passwordHash, 'سارة العتيبي (Sara Al-Otaibi)', '+966501000002', now, now);
     insertUser.run(mgrMktId, 'khaled@demo.workflow.local', passwordHash, 'خالد الحربي (Khaled Al-Harbi)', '+966501000003', now, now);
 
     // 4. Create 12 Comprehensive Departments
-    const deptEngId = newId('dep');
-    const deptMktId = newId('dep');
-    const deptOpsId = newId('dep');
+    const deptEngId = dId('dep');
+    const deptMktId = dId('dep');
+    const deptOpsId = dId('dep');
     const insertDept = db.prepare(`
       INSERT INTO departments (id, company_id, name, description, manager_user_id, status, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
@@ -221,15 +224,15 @@ function seedDemoWorkspace({ reset = true } = {}) {
     insertDept.run(deptOpsId, companyId, 'قسم العمليات ونجاح العملاء', 'مسؤول عن تأهيل العملاء والدعم الفني وضمان الجودة.', ownerId, now, now);
 
     for (const extraDept of STANDARD_DEPARTMENTS.slice(3)) {
-      insertDept.run(newId('dep'), companyId, extraDept.name, extraDept.desc, ownerId, now, now);
+      insertDept.run(dId('dep'), companyId, extraDept.name, extraDept.desc, ownerId, now, now);
     }
 
     insertMember.run(
-      newId('mem'), companyId, mgrEngId, 'EMP-002', 'مديرة هندسة البرمجيات',
+      dId('mem'), companyId, mgrEngId, 'EMP-002', 'مديرة هندسة البرمجيات',
       deptEngId, ownerId, 'manager', JSON.stringify(config.defaultRolePermissions.manager), dayOffset(-100), now, now
     );
     insertMember.run(
-      newId('mem'), companyId, mgrMktId, 'EMP-003', 'مدير التسويق والنمو',
+      dId('mem'), companyId, mgrMktId, 'EMP-003', 'مدير التسويق والنمو',
       deptMktId, ownerId, 'manager', JSON.stringify(config.defaultRolePermissions.manager), dayOffset(-95), now, now
     );
 
@@ -249,19 +252,19 @@ function seedDemoWorkspace({ reset = true } = {}) {
 
     const empIds = [];
     for (const spec of employeesSpec) {
-      const uid = newId('usr');
+      const uid = dId('usr');
       empIds.push(uid);
       insertUser.run(uid, spec.email, passwordHash, spec.name, '+966501000010', now, now);
       insertMember.run(
-        newId('mem'), companyId, uid, spec.code, spec.title,
+        dId('mem'), companyId, uid, spec.code, spec.title,
         spec.dept, spec.mgr, 'employee', JSON.stringify(config.defaultRolePermissions.employee), dayOffset(-60), now, now
       );
     }
 
     // 6. Create 3 Projects
-    const proj1Id = newId('prj');
-    const proj2Id = newId('prj');
-    const proj3Id = newId('prj');
+    const proj1Id = dId('prj');
+    const proj2Id = dId('prj');
+    const proj3Id = dId('prj');
     const insertProj = db.prepare(`
       INSERT INTO projects (
         id, company_id, name, description, color, manager_user_id, department_id,
@@ -300,13 +303,13 @@ function seedDemoWorkspace({ reset = true } = {}) {
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     [mgrEngId, empIds[0], empIds[1], empIds[2], empIds[3], empIds[4]].forEach((uid, i) => {
-      insertPM.run(newId('pm'), companyId, proj1Id, uid, i === 0 ? 'manager' : 'member', now);
+      insertPM.run(dId('pm'), companyId, proj1Id, uid, i === 0 ? 'manager' : 'member', now);
     });
     [mgrMktId, empIds[5], empIds[6], empIds[7]].forEach((uid, i) => {
-      insertPM.run(newId('pm'), companyId, proj2Id, uid, i === 0 ? 'manager' : 'member', now);
+      insertPM.run(dId('pm'), companyId, proj2Id, uid, i === 0 ? 'manager' : 'member', now);
     });
     [ownerId, empIds[8], empIds[9]].forEach((uid, i) => {
-      insertPM.run(newId('pm'), companyId, proj3Id, uid, i === 0 ? 'manager' : 'member', now);
+      insertPM.run(dId('pm'), companyId, proj3Id, uid, i === 0 ? 'manager' : 'member', now);
     });
 
     // 7. Create Sample Tasks across all statuses
@@ -319,16 +322,16 @@ function seedDemoWorkspace({ reset = true } = {}) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const t1 = newId('tsk');
-    const t2 = newId('tsk');
-    const t3 = newId('tsk');
-    const t4 = newId('tsk');
-    const t5 = newId('tsk');
-    const t6 = newId('tsk');
-    const t7 = newId('tsk');
-    const t8 = newId('tsk');
-    const t9 = newId('tsk');
-    const t10 = newId('tsk');
+    const t1 = dId('tsk');
+    const t2 = dId('tsk');
+    const t3 = dId('tsk');
+    const t4 = dId('tsk');
+    const t5 = dId('tsk');
+    const t6 = dId('tsk');
+    const t7 = dId('tsk');
+    const t8 = dId('tsk');
+    const t9 = dId('tsk');
+    const t10 = dId('tsk');
 
     // Completed task
     insertTask.run(
@@ -409,7 +412,7 @@ function seedDemoWorkspace({ reset = true } = {}) {
     );
 
     // Subtask under t3
-    const sub1 = newId('tsk');
+    const sub1 = dId('tsk');
     insertTask.run(
       sub1, companyId, proj1Id, deptEngId, t3,
       'إضافة فلاتر الأولوية والموعد النهائي في صفحة مهامي',
@@ -418,29 +421,29 @@ function seedDemoWorkspace({ reset = true } = {}) {
     );
 
     // Checklist items on t3
-    const chkId = newId('chk');
+    const chkId = dId('chk');
     db.prepare('INSERT INTO task_checklists (id, company_id, task_id, title, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(chkId, companyId, t3, 'خطوات التنفيذ الأساسية', now);
     const insertChkItem = db.prepare(`
       INSERT INTO task_checklist_items (id, company_id, task_id, checklist_id, title, is_completed, is_required, sort_order, created_at)
       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
     `);
-    insertChkItem.run(newId('chi'), companyId, t3, chkId, 'تصميم بطاقات الملخص العلوية', 1, 1, now);
-    insertChkItem.run(newId('chi'), companyId, t3, chkId, 'ربط تبويبات التصفية مع الـ API', 1, 2, now);
-    insertChkItem.run(newId('chi'), companyId, t3, chkId, 'اختبار التجاوب على شاشات الجوال', 0, 3, now);
+    insertChkItem.run(dId('chi'), companyId, t3, chkId, 'تصميم بطاقات الملخص العلوية', 1, 1, now);
+    insertChkItem.run(dId('chi'), companyId, t3, chkId, 'ربط تبويبات التصفية مع الـ API', 1, 2, now);
+    insertChkItem.run(dId('chi'), companyId, t3, chkId, 'اختبار التجاوب على شاشات الجوال', 0, 3, now);
 
     // Dependency: t5 depends on t1
     db.prepare(`
       INSERT INTO task_dependencies (id, company_id, task_id, depends_on_task_id, created_at)
       VALUES (?, ?, ?, ?, ?)
-    `).run(newId('dep'), companyId, t5, t1, now);
+    `).run(dId('dep'), companyId, t5, t1, now);
 
     // Sample Comments & Reviews
     db.prepare(`
       INSERT INTO task_comments (id, company_id, task_id, user_id, content, mentions_json, is_edited, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
     `).run(
-      newId('cmt'), companyId, t2, empIds[0],
+      dId('cmt'), companyId, t2, empIds[0],
       'أنهيت تطوير لوحة كانبان بالكامل مع دعم السحب والإفلات وتغيير الحالة على الجوال، جاهزة للمراجعة @manager@demo.workflow.local',
       JSON.stringify([mgrEngId]), now, now
     );
@@ -448,7 +451,7 @@ function seedDemoWorkspace({ reset = true } = {}) {
     db.prepare(`
       INSERT INTO task_reviews (id, company_id, task_id, submitted_by, action, feedback, created_at)
       VALUES (?, ?, ?, ?, 'submitted', 'تم إكمال جميع المتطلبات واختبار الصلاحيات.', ?)
-    `).run(newId('rev'), companyId, t2, empIds[0], now);
+    `).run(dId('rev'), companyId, t2, empIds[0], now);
 
     // Sample Reference Image (Logo/Mockup) & Reference File from Manager to Employee
     fs.mkdirSync(config.uploadDir, { recursive: true });
@@ -467,7 +470,7 @@ function seedDemoWorkspace({ reset = true } = {}) {
       <text x="190" y="138" fill="#bfdbfe" font-family="Cairo, Arial, sans-serif" font-size="18">نموذج الشعار والهوية البصرية المرجعية للمهمة</text>
     </svg>`;
     const logoBuffer = Buffer.from(sampleSvgLogo, 'utf8');
-    const logoId = newId('att');
+    const logoId = dId('att');
     const logoStoredName = `${logoId}_namaa-logo-reference.svg`;
     const logoStoragePath = path.join(config.uploadDir, logoStoredName);
     fs.writeFileSync(logoStoragePath, logoBuffer);
@@ -478,7 +481,7 @@ function seedDemoWorkspace({ reset = true } = {}) {
 2. استخدام خط Cairo في جميع العناوين والأزرار والبطاقات.
 3. تسليم العمل للمراجعة فور الانتهاء من قائمة الخطوات.`;
     const briefBuffer = Buffer.from(briefContent, 'utf8');
-    const briefId = newId('att');
+    const briefId = dId('att');
     const briefStoredName = `${briefId}_task-specifications-brief.txt`;
     const briefStoragePath = path.join(config.uploadDir, briefStoredName);
     fs.writeFileSync(briefStoragePath, briefBuffer);
